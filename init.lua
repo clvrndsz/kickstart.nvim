@@ -91,21 +91,27 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
 
+-- show tablines always
+vim.opt.showtabline = 2
+
+-- restore sessions and windows
+vim.opt.sessionoptions = 'curdir,folds,globals,help,tabpages,terminal,winsize'
+
 -- Make line numbers default
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.mouse = 'a'
+vim.opt.mouse = 'v'
 
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
@@ -176,10 +182,10 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -230,7 +236,7 @@ vim.opt.rtp:prepend(lazypath)
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-
+  'EdenEast/nightfox.nvim',
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -240,7 +246,7 @@ require('lazy').setup({
 
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
-  --    require('gitsigns').setup({ ... })
+  --require('gitsigns').setup { ... }
   --
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
@@ -605,10 +611,10 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
-        -- gopls = {},
+        clangd = {},
+        gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -830,7 +836,7 @@ require('lazy').setup({
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
+    -- priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
@@ -842,6 +848,122 @@ require('lazy').setup({
     end,
   },
 
+  --NOTE: Lualine
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+  },
+  --NOTE: Tabby
+
+  {
+    'nanozuki/tabby.nvim',
+    -- event = 'VimEnter', -- if you want lazy load, see below
+    dependencies = 'nvim-tree/nvim-web-devicons',
+    config = function()
+      local theme = {
+        fill = 'TabLineFill',
+        -- Also you can do this: fill = { fg='#f2e9de', bg='#907aa9', style='italic' }
+        head = 'TabLine',
+        current_tab = 'TabLineSel',
+        tab = 'TabLine',
+        win = 'TabLine',
+        tail = 'TabLine',
+      }
+      require('tabby').setup {
+        line = function(line)
+          return {
+            {
+              { '  ', hl = theme.head },
+              line.sep('', theme.head, theme.fill),
+            },
+            line.tabs().foreach(function(tab)
+              local hl = tab.is_current() and theme.current_tab or theme.tab
+              return {
+                line.sep('', hl, theme.fill),
+                tab.is_current() and '' or '󰆣',
+                tab.number(),
+                tab.name(),
+                tab.close_btn '',
+                line.sep('', hl, theme.fill),
+                hl = hl,
+                margin = ' ',
+              }
+            end),
+            line.spacer(),
+            line.wins_in_tab(line.api.get_current_tab()).foreach(function(win)
+              return {
+                line.sep('', theme.win, theme.fill),
+                win.is_current() and '' or '',
+                win.buf_name(),
+                line.sep('', theme.win, theme.fill),
+                hl = theme.win,
+                margin = ' ',
+              }
+            end),
+            {
+              line.sep('', theme.tail, theme.fill),
+              { '  ', hl = theme.tail },
+            },
+            hl = theme.fill,
+          }
+        end,
+        -- option = {}, -- setup modules' option,
+      } -- configs...
+    end,
+  },
+  -- NOTE: Nightfox
+  {
+    'EdenEast/nightfox.nvim',
+    lazy = false,
+    priority = 1000,
+    init = function()
+      -- Default options
+      require('nightfox').setup {
+        options = {
+          -- Compiled file's destination location
+          compile_path = vim.fn.stdpath 'cache' .. '/nightfox',
+          compile_file_suffix = '_compiled', -- Compiled file suffix
+          transparent = false, -- Disable setting background
+          terminal_colors = true, -- Set terminal colors (vim.g.terminal_color_*) used in `:terminal`
+          dim_inactive = false, -- Non focused panes set to alternative background
+          module_default = true, -- Default enable value for modules
+          colorblind = {
+            enable = false, -- Enable colorblind support
+            simulate_only = false, -- Only show simulated colorblind colors and not diff shifted
+            severity = {
+              protan = 0, -- Severity [0,1] for protan (red)
+              deutan = 0, -- Severity [0,1] for deutan (green)
+              tritan = 0, -- Severity [0,1] for tritan (blue)
+            },
+          },
+          styles = { -- Style to be applied to different syntax groups
+            comments = 'NONE', -- Value is any valid attr-list value `:help attr-list`
+            conditionals = 'NONE',
+            constants = 'NONE',
+            functions = 'NONE',
+            keywords = 'NONE',
+            numbers = 'NONE',
+            operators = 'NONE',
+            strings = 'NONE',
+            types = 'NONE',
+            variables = 'NONE',
+          },
+          inverse = { -- Inverse highlight for different types
+            match_paren = false,
+            visual = false,
+            search = false,
+          },
+          modules = { -- List of various plugins and additional options
+            -- ...
+          },
+        },
+        palettes = {},
+        specs = {},
+        groups = {},
+      }
+      vim.cmd 'colorscheme nightfox'
+    end,
+  },
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -917,11 +1039,11 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
@@ -929,7 +1051,7 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
